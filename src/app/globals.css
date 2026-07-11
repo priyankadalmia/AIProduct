@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+:root,
+:root[data-theme="pink"] {
+  --background: #fefcfb;
+  --foreground: #1a1a2e;
+  --primary: #e8a0bf;
+  --primary-dark: #d4789e;
+  --secondary: #f5d0e0;
+  --accent: #f5e6cc;
+  --muted: #f7f0ea;
+  --card: #ffffff;
+  --border: #f0e4dc;
+  --text-secondary: #6b7280;
+  --gradient-from: rgba(232, 160, 191, 0.1);
+  --gradient-via: rgba(245, 230, 204, 0.2);
+  --gradient-to: transparent;
+  --toggle-bg: #f5d0e0;
+  --toggle-active: #d4789e;
+}
+
+:root[data-theme="blue"] {
+  --background: #f8fafc;
+  --foreground: #1a1a2e;
+  --primary: #93b5e1;
+  --primary-dark: #5b8fc9;
+  --secondary: #b8d4e3;
+  --accent: #d4e4f7;
+  --muted: #edf2f7;
+  --card: #ffffff;
+  --border: #dce5ef;
+  --text-secondary: #64748b;
+  --gradient-from: rgba(147, 181, 225, 0.1);
+  --gradient-via: rgba(212, 228, 247, 0.2);
+  --gradient-to: transparent;
+  --toggle-bg: #b8d4e3;
+  --toggle-active: #5b8fc9;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-muted: var(--muted);
+  --color-card: var(--card);
+  --color-border: var(--border);
+  --color-text-secondary: var(--text-secondary);
+  --color-toggle-bg: var(--toggle-bg);
+  --color-toggle-active: var(--toggle-active);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
