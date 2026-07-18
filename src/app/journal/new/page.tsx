@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 const moodOptions = [
   { emoji: "🥰", label: "Loving" },
@@ -21,11 +23,12 @@ const symptomOptions = [
 ];
 
 export default function NewEntry() {
+  const router = useRouter();
   const [mood, setMood] = useState("");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
-  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const toggleSymptom = (symptom: string) => {
     setSelectedSymptoms((prev) =>
@@ -33,9 +36,22 @@ export default function NewEntry() {
     );
   };
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+  const handleSave = async () => {
+    if (!title || !body || !mood) return;
+    setSaving(true);
+    const { error } = await supabase.from("journal_entries").insert({
+      title,
+      body,
+      mood,
+      week: 24,
+      symptoms: selectedSymptoms,
+      tags: [],
+      has_photo: false,
+    });
+    setSaving(false);
+    if (!error) {
+      router.push("/journal");
+    }
   };
 
   return (
@@ -49,7 +65,7 @@ export default function NewEntry() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold">New Journal Entry</h1>
-          <p className="text-sm text-text-secondary">Week 24 &middot; July 11, 2026</p>
+          <p className="text-sm text-text-secondary">Week 24 &middot; {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</p>
         </div>
       </div>
 
@@ -77,9 +93,7 @@ export default function NewEntry() {
 
         {/* Title */}
         <div className="rounded-2xl border border-border bg-card p-5">
-          <label htmlFor="title" className="text-sm font-semibold text-text-secondary uppercase tracking-wider">
-            Title
-          </label>
+          <label htmlFor="title" className="text-sm font-semibold text-text-secondary uppercase tracking-wider">Title</label>
           <input
             id="title"
             type="text"
@@ -92,9 +106,7 @@ export default function NewEntry() {
 
         {/* Body */}
         <div className="rounded-2xl border border-border bg-card p-5">
-          <label htmlFor="body" className="text-sm font-semibold text-text-secondary uppercase tracking-wider">
-            What&apos;s on your mind?
-          </label>
+          <label htmlFor="body" className="text-sm font-semibold text-text-secondary uppercase tracking-wider">What&apos;s on your mind?</label>
           <textarea
             id="body"
             rows={8}
@@ -129,9 +141,7 @@ export default function NewEntry() {
         <div className="rounded-2xl border-2 border-dashed border-border bg-card p-8 text-center transition-colors hover:border-primary/40">
           <div className="text-3xl">📸</div>
           <p className="mt-2 text-sm font-medium">Add a photo</p>
-          <p className="mt-1 text-xs text-text-secondary">
-            Bump photo, ultrasound, or any special moment
-          </p>
+          <p className="mt-1 text-xs text-text-secondary">Bump photo, ultrasound, or any special moment</p>
         </div>
 
         {/* Actions */}
@@ -144,9 +154,10 @@ export default function NewEntry() {
           </Link>
           <button
             onClick={handleSave}
-            className="rounded-full bg-primary-dark px-8 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-dark/90"
+            disabled={saving || !title || !body || !mood}
+            className="rounded-full bg-primary-dark px-8 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-dark/90 disabled:opacity-50"
           >
-            {saved ? "✓ Saved!" : "Save Entry"}
+            {saving ? "Saving..." : "Save Entry"}
           </button>
         </div>
       </div>

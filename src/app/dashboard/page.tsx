@@ -1,17 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+import type { JournalEntry, Milestone } from "@/lib/types";
 
 const currentWeek = 24;
 const dueDate = "March 15, 2027";
 const daysLeft = 112;
 const babySize = "An ear of corn";
-
-const recentEntries = [
-  { id: 1, date: "Jul 10, 2026", mood: "😊", title: "Felt the baby kick during lunch!", preview: "Was sitting at my desk eating lunch and felt the strongest kick yet..." },
-  { id: 2, date: "Jul 8, 2026", mood: "😴", title: "Tired but grateful", preview: "Had trouble sleeping last night but felt thankful for this journey..." },
-  { id: 3, date: "Jul 5, 2026", mood: "🥰", title: "Ultrasound day!", preview: "Got to see our little one today. Everything looks healthy and..." },
-];
 
 const symptoms = [
   { name: "Back pain", level: 2 },
@@ -20,14 +17,35 @@ const symptoms = [
   { name: "Nausea", level: 0 },
 ];
 
-const upcomingMilestones = [
-  { week: 25, title: "Baby responds to your voice" },
-  { week: 27, title: "Third trimester begins" },
-  { week: 28, title: "Glucose screening test" },
-];
-
 export default function Dashboard() {
+  const [recentEntries, setRecentEntries] = useState<JournalEntry[]>([]);
+  const [upcomingMilestones, setUpcomingMilestones] = useState<Milestone[]>([]);
+  const [loading, setLoading] = useState(true);
   const progress = (currentWeek / 40) * 100;
+
+  useEffect(() => {
+    Promise.all([
+      supabase
+        .from("journal_entries")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(3),
+      supabase
+        .from("milestones")
+        .select("*")
+        .eq("completed", false)
+        .order("sort_order")
+        .limit(3),
+    ]).then(([entriesRes, milestonesRes]) => {
+      if (entriesRes.data) setRecentEntries(entriesRes.data);
+      if (milestonesRes.data) setUpcomingMilestones(milestonesRes.data);
+      setLoading(false);
+    });
+  }, []);
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  };
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -56,9 +74,7 @@ export default function Dashboard() {
           </div>
           <div className="text-center">
             <div className="text-5xl">🌽</div>
-            <p className="mt-2 text-sm text-text-secondary">
-              Baby is the size of
-            </p>
+            <p className="mt-2 text-sm text-text-secondary">Baby is the size of</p>
             <p className="font-semibold">{babySize}</p>
           </div>
         </div>
@@ -83,34 +99,36 @@ export default function Dashboard() {
         <div className="lg:col-span-2">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Recent Journal Entries</h2>
-            <Link href="/journal" className="text-sm font-medium text-primary-dark hover:underline">
-              View all
-            </Link>
+            <Link href="/journal" className="text-sm font-medium text-primary-dark hover:underline">View all</Link>
           </div>
           <div className="mt-4 flex flex-col gap-3">
-            {recentEntries.map((entry) => (
-              <div
-                key={entry.id}
-                className="rounded-xl border border-border bg-card p-4 transition-shadow hover:shadow-md"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{entry.mood}</span>
-                      <h3 className="font-semibold">{entry.title}</h3>
-                    </div>
-                    <p className="mt-1 text-sm text-text-secondary">{entry.preview}</p>
-                  </div>
-                  <span className="ml-4 shrink-0 text-xs text-text-secondary">{entry.date}</span>
-                </div>
+            {loading ? (
+              <div className="py-8 text-center text-text-secondary">Loading...</div>
+            ) : recentEntries.length === 0 ? (
+              <div className="rounded-xl border border-border bg-card p-8 text-center">
+                <p className="text-text-secondary">No entries yet. Start journaling!</p>
               </div>
-            ))}
+            ) : (
+              recentEntries.map((entry) => (
+                <div key={entry.id} className="rounded-xl border border-border bg-card p-4 transition-shadow hover:shadow-md">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{entry.mood}</span>
+                        <h3 className="font-semibold">{entry.title}</h3>
+                      </div>
+                      <p className="mt-1 text-sm text-text-secondary line-clamp-1">{entry.body}</p>
+                    </div>
+                    <span className="ml-4 shrink-0 text-xs text-text-secondary">{formatDate(entry.created_at)}</span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
         {/* Sidebar */}
         <div className="flex flex-col gap-6">
-          {/* Symptoms */}
           <div className="rounded-xl border border-border bg-card p-5">
             <h2 className="text-lg font-semibold">Today&apos;s Symptoms</h2>
             <div className="mt-4 flex flex-col gap-3">
@@ -119,12 +137,7 @@ export default function Dashboard() {
                   <span className="text-sm">{s.name}</span>
                   <div className="flex gap-1">
                     {[1, 2, 3].map((level) => (
-                      <div
-                        key={level}
-                        className={`h-2.5 w-6 rounded-full ${
-                          level <= s.level ? "bg-primary-dark" : "bg-border"
-                        }`}
-                      />
+                      <div key={level} className={`h-2.5 w-6 rounded-full ${level <= s.level ? "bg-primary-dark" : "bg-border"}`} />
                     ))}
                   </div>
                 </div>
@@ -132,23 +145,23 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Upcoming milestones */}
           <div className="rounded-xl border border-border bg-card p-5">
             <h2 className="text-lg font-semibold">Upcoming Milestones</h2>
             <div className="mt-4 flex flex-col gap-3">
-              {upcomingMilestones.map((m) => (
-                <div key={m.week} className="flex items-start gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-bold text-foreground">
-                    W{m.week}
+              {loading ? (
+                <div className="text-sm text-text-secondary">Loading...</div>
+              ) : (
+                upcomingMilestones.map((m) => (
+                  <div key={m.id} className="flex items-start gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-bold text-foreground">
+                      W{m.week}
+                    </div>
+                    <p className="text-sm">{m.title}</p>
                   </div>
-                  <p className="text-sm">{m.title}</p>
-                </div>
-              ))}
+                ))
+              )}
             </div>
-            <Link
-              href="/milestones"
-              className="mt-4 block text-sm font-medium text-primary-dark hover:underline"
-            >
+            <Link href="/milestones" className="mt-4 block text-sm font-medium text-primary-dark hover:underline">
               View all milestones
             </Link>
           </div>
